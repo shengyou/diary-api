@@ -1,8 +1,8 @@
 package cn.kraftsman
 
-import cn.kraftsman.requests.DiaryRequestWrapper
-import cn.kraftsman.responses.DiaryResponse
-import cn.kraftsman.responses.StatusResponse
+import cn.kraftsman.entities.DataWrapper
+import cn.kraftsman.entities.Diary
+import cn.kraftsman.entities.Status
 import cn.kraftsman.tables.Diaries
 //import com.fasterxml.jackson.datatype.joda.JodaModule
 import io.ktor.application.*
@@ -47,7 +47,7 @@ fun Application.module(testing: Boolean = false) {
         get("/api/v1/GetDiaryList") {
             val diaries = transaction {
                 Diaries.selectAll().orderBy(Diaries.id to SortOrder.ASC).map {
-                    DiaryResponse(
+                    Diary(
                         id = it[Diaries.id],
                         time = it[Diaries.time],
                         data = it[Diaries.data]
@@ -59,7 +59,7 @@ fun Application.module(testing: Boolean = false) {
         }
 
         post("/api/v1/PushDiaryList") {
-            val request = call.receive<DiaryRequestWrapper>()
+            val request = call.receive<DataWrapper>()
 
             try {
                 transaction {
@@ -74,10 +74,10 @@ fun Application.module(testing: Boolean = false) {
                     }
                 }
             } catch (e: Exception) {
-                call.respond(HttpStatusCode.BadRequest, StatusResponse(0, "Something went wrong"))
+                call.respond(HttpStatusCode.BadRequest, Status(0, "Something went wrong"))
             }
 
-            call.respond(StatusResponse(1))
+            call.respond(Status(1))
         }
 
     }
