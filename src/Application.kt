@@ -1,17 +1,21 @@
 package cn.kraftsman
 
-import cn.kraftsman.entities.Diary
+import cn.kraftsman.requests.DiaryRequestWrapper
+import cn.kraftsman.responses.DiaryResponse
+import cn.kraftsman.responses.StatusResponse
 import cn.kraftsman.tables.Diaries
+import com.fasterxml.jackson.datatype.joda.JodaModule
 import io.ktor.application.*
 import io.ktor.features.ContentNegotiation
+import io.ktor.http.HttpStatusCode
 import io.ktor.jackson.jackson
+import io.ktor.request.receive
 import io.ktor.response.*
 import io.ktor.routing.get
+import io.ktor.routing.post
 import io.ktor.routing.routing
-import org.jetbrains.exposed.sql.Database
-import org.jetbrains.exposed.sql.SchemaUtils
+import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.joda.time.DateTime
 
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 
@@ -21,7 +25,7 @@ fun Application.module(testing: Boolean = false) {
 
     install(ContentNegotiation) {
         jackson {
-
+//            registerModule(JodaModule())
         }
     }
 
@@ -34,21 +38,46 @@ fun Application.module(testing: Boolean = false) {
         SchemaUtils.create(Diaries)
     }
 
-    transaction {
-        for (index in 1..5) {
-            val diary = Diary.new {
-                content = "Sample Diary $index"
-                createdAt = DateTime.now()
-                updatedAt = DateTime.now()
-            }
-            println("Diary ${diary.id} created")
-        }
-    }
-
     routing {
 
         get("/") {
-            call.respondText("Hello, world")
+            call.respondText("Hello, Ktor")
+        }
+
+        get("/api/v1/GetDiaryList") {
+            val diaries = transaction {
+                Diaries.selectAll().orderBy(Diaries.id to SortOrder.ASC).map {
+                    DiaryResponse(
+                        id = it[Diaries.id],
+                        time = it[Diaries.time],
+                        data = it[Diaries.data]
+                    )
+                }
+            }
+
+            call.respond(mapOf("data" to diaries))
+        }
+
+        post("/api/v1/PushDiaryList") {
+            val request = call.receive<DiaryRequestWrapper>()
+
+            try {
+                transaction {
+                    Diaries.deleteAll()
+
+                    request.data.forEach { diaryRequest ->
+                        Diaries.insert {
+                            it[id] = diaryRequest.id
+                            it[time] = diaryRequest.time
+                            it[data] = diaryRequest.data
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                call.respond(HttpStatusCode.BadRequest, StatusResponse(0, "Something went wrong"))
+            }
+
+            call.respond(StatusResponse(1))
         }
 
     }

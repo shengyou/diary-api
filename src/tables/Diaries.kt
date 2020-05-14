@@ -1,10 +1,12 @@
 package cn.kraftsman.tables
 
-import org.jetbrains.exposed.dao.id.IntIdTable
+import org.jetbrains.exposed.sql.Table
 import org.jetbrains.exposed.sql.jodatime.datetime
 
-object Diaries : IntIdTable() {
-    val content = text("content")
-    val createdAt = datetime("created_at")
-    val updatedAt = datetime("updated_at")
+object Diaries : Table() {
+    val id = integer("id")
+    val time = datetime("time")
+    val data = text("data")
+
+    override val primaryKey = PrimaryKey(id, name = "PK_Diaries_ID")
 }
