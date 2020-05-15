@@ -1,0 +1,27 @@
+steps:
+  # Uses the Cloud Builders Gradle image.
+  - name: 'gcr.io/cloud-builders/gradle'
+    args:
+      # Uncomment for projects that do not include Jib as a plugin.
+      - '--init-script=auto-jib.gradle'
+
+      # Runs the Jib build.
+      # For advanced customizations, configure the plugin in the build.gradle.
+      - 'jib'
+
+      # Sets the target image reference to push to.
+      - '--image=gcr.io/${_PROJECT}/${_IMAGE}'
+
+  # Deploy an image from Container Registry to Cloud Run
+  - name: 'gcr.io/cloud-builders/gcloud'
+    args:
+      - 'run'
+      - 'deploy'
+      - '${_SERVICE}'
+      - '--image'
+      - 'gcr.io/${_PROJECT}/${_IMAGE}'
+      - '--region'
+      - '${_REGION}'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
